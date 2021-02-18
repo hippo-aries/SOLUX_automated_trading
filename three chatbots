@@ -1,4 +1,4 @@
-# 슬랙봇  
+# 슬랙봇 시작 
 import time, base64, hmac, hashlib, requests, json
 from slacker import Slacker
 
