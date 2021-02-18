@@ -1,0 +1,318 @@
+# 슬랙봇  
+import time, base64, hmac, hashlib, requests, json
+from slacker import Slacker
+
+# talib 불러오기
+import talib
+import numpy as np
+
+apikey = '2eaa6531162877841da4c3c62517b87c'
+secret = '7b76114def75db596baf46e90e7957e3'
+
+slack = Slacker('xoxb-1701877278516-1680953559239-DJJ61SUMk10rjGBEjWkqzn3t')
+
+is_buy = False
+
+# Send a message to #general channel
+slack.chat.post_message('#coin', '안녕하세요! 비트코인 자동거래를 시작하겠습니다.')
+
+# c
+rsi_status = ''
+
+def buy_test(amount,price):
+    nonce = str(time.time())
+    method = 'POST'
+    request_path = '/orders'
+    request_body = {
+        "amount": amount,
+        "price": price,
+        "side": "buy",
+        "tradingPairName": "BTC-KRW",
+        "type": "limit"
+    };
+
+    what = nonce + method + request_path + json.dumps(request_body, sort_keys=True)
+    key = base64.b64decode(secret)
+    signature = hmac.new(key, str(what).encode('utf-8'), hashlib.sha512)
+    signature_b64 = base64.b64encode(signature.digest())
+
+    custom_headers = {
+        'API-Key': apikey,
+        'Signature': signature_b64,
+        'Nonce': nonce
+    }
+
+    req = requests.post(url='https://api.gopax.co.kr' + request_path, headers=custom_headers, json=request_body)
+    is_buy = True
+    message = '코인명 : BTC \n 변경된 포지션 : 매수 \n 거래 성공여부 : 성공 \n-\n 발생 시각 : {} \n 거래소 : Gopax \n 거래금액 : {} \n 수량 : {}'.format(time.ctime, close_price_list[-1], 0.001)
+    slack.chat.post_message('#coin', '코인 자동거래 알림입니다.\n\n' + message)
+    print('매수')
+
+def sell_test(amount,price):
+    nonce = str(time.time())
+    method = 'POST'
+    request_path = '/orders'
+    request_body = {
+        "amount": amount,
+        "price": price,
+        "side": "sell",
+        "tradingPairName": "BTC-KRW",
+        "type": "limit"
+    };
+
+    what = nonce + method + request_path + json.dumps(request_body, sort_keys=True)
+    key = base64.b64decode(secret)
+    signature = hmac.new(key, str(what).encode('utf-8'), hashlib.sha512)
+    signature_b64 = base64.b64encode(signature.digest())
+
+    custom_headers = {
+        'API-Key': apikey,
+        'Signature': signature_b64,
+        'Nonce': nonce
+    }
+
+    req = requests.post(url='https://api.gopax.co.kr' + request_path, headers=custom_headers, json=request_body)
+    is_buy = False
+    message = '코인명 : BTC \n 변경된 포지션 : 매도 \n 거래 성공여부 : 성공 \n-\n 발생 시각 : {} \n 거래소 : Gopax \n 거래금액 : {} \n 수량 : {}'.format(time.ctime, close_price_list[-1], 0.001)
+    slack.chat.post_message('#coin', '코인 자동거래 알림입니다.\n\n' + message)
+    print('매도')
+
+while True:
+
+    now_time = round(time.time() * 1000)
+    start = int(now_time)-60*60*1000*1000
+    end = int(now_time)
+    print(start)
+    print(end)
+    r = requests.get('https://api.gopax.co.kr/trading-pairs/BTC-KRW/candles?start='+str(start)+'&end='+str(end)+'&interval=30')
+
+    arr = r.json()
+    print(len(r.json()))
+    close_price_list = []
+
+    for ar in arr:
+        close_price_list.append(float(ar[4]))
+    close_price_list = np.array(close_price_list, dtype='f8')
+    output = talib.SMA(close_price_list, timeperiod = 14)
+
+    # rsi 계산
+    rsi = talib.RSI(close_price_list,timeperiod = 14)
+
+    if rsi[-1] < 30:
+        rsi_status='low'
+    elif 30<=rsi[-1]<70:
+        if rsi_status == 'low'and is_buy == False:
+            #buy_test(0.001, close_price_list[-1])
+            print('rsi 상향 돌파!')
+        if rsi_status == 'high' and is_buy == True:
+            sell_test(0.001, close_price_list[-1])
+            is_buy = False
+            print('rsi 하향 돌파 매도!')
+        rsi_status = 'middle'
+    else:
+        rsi_status = 'high'
+
+    avg_min_15 = sum(close_price_list[-15:]) / 15
+    avg_min_50 = sum(close_price_list[-50:]) / 50
+    if avg_min_15 > avg_min_50 * 1.004 and is_buy == False:
+        is_buy = True
+        buy_test(0.001,close_price_list[-1])
+    print(output)   
+
+    
+# 텔레그램봇 시작
+import time, base64, hmac, hashlib, requests, json
+import telegram
+
+# talib 불러오기
+import talib
+import numpy as np
+
+apikey = "3fcdf0c7-078b-43b0-a09b-ffc6143573e9"
+secret = "9akSvT8klk3SxE0YneRHS+WVk3Lv462SNt/jM9bRa8S5fMiXxIwzYPk5teMrGxz6Xxuq+MBcuIIhUK0GOz6mVg=="
+
+# 생성된 토큰을 입력해준다.
+my_token = "1518306402:AAGhtY7wjAWspeG0B2y0NtiD_-Bu6IJ3_ls"
+chat_id = "1491342549"
+
+bot = telegram.Bot(token = my_token)
+is_buy = False
+
+message = '비트코인 자동거래 시작합니다!'
+bot.sendMessage(chat_id=chat_id, text=message)
+
+time.sleep(5)
+
+rsi_status = ''
+
+def buy(amount, price):
+    trade_time = time.ctime()
+    print('--------------------')
+    print('봇 이름 : TradeBot \n코인명 : BTC \n변경된 포지션 : 매수 \n거래 성공여부 : 성공\n-')
+    print('발생 시각 : {} \n거래소 : Gopax \n거래 금액 : {}'.format(trade_time, close_price_list[-1]))
+    print('--------------------\n\n')
+    message = '봇 이름 : TradeBot \n코인명 : BTC \n변경된 포지션 : 매수 \n거래 성공여부 : 성공\n-\n발생 시각 : {} \n거래소 : Gopax \n거래 금액 : {}'.format(trade_time, close_price_list[-1])
+    bot.sendMessage(chat_id=chat_id, text=message)
+
+def sell(amount, price):
+    trade_time = time.ctime()
+    print('--------------------')
+    print('봇 이름 : TradeBot \n코인명 : BTC \n변경된 포지션 : 매도 \n거래 성공여부 : 성공\n-')
+    print('발생 시각 : {} \n거래소 : Gopax \n거래 금액 : {}'.format(trade_time, close_price_list[-1]))
+    print('--------------------\n\n')
+    message = '봇 이름 : TradeBot \n코인명 : BTC \n변경된 포지션 : 매도 \n거래 성공여부 : 성공\n-\n발생 시각 : {} \n거래소 : Gopax \n거래 금액 : {}'.format(trade_time, close_price_list[-1])
+    bot.sendMessage(chat_id=chat_id, text=message)
+
+now_time = round(time.time() * 1000)
+start = int(now_time)-60*60*1000*1000
+end = int(now_time)
+
+r = requests.get('https://api.gopax.co.kr/trading-pairs/BTC-KRW/candles?start='+str(start)+'&end='+str(end)+'&interval=30')
+
+arr = r.json()
+close_price_list = []
+
+for ar in arr:
+    close_price_list.append(float(ar[4]))
+    close_price_list_nparr = np.array(close_price_list, dtype='f8')
+    output = talib.SMA(close_price_list_nparr)
+
+    # rsi 계산
+    rsi = talib.RSI(close_price_list_nparr,timeperiod = 14)
+
+    if rsi[-1] < 30:
+        rsi_status = 'low'
+    elif 30 <= rsi[-1] < 70:
+        if rsi_status == 'low' and is_buy == False:
+            print('rsi 상향 돌파')
+        if rsi_status == 'high' and is_buy == True:
+            sell(0.001, close_price_list[-1])
+            is_buy = False
+        rsi_status = 'middle'
+    else:
+        rsi_status = 'high'
+
+    avg_min_15 = sum(close_price_list[-15:]) / 15
+    avg_min_50 = sum(close_price_list[-50:]) / 50
+
+    if avg_min_15 > avg_min_50 * 1.004 and is_buy == False:
+        is_buy = True
+        buy(0.001, close_price_list[-1])
+
+    time.sleep(5)
+    
+    
+# 디스코드봇 시작
+import time, base64, hmac, hashlib, requests, json
+import asyncio, discord
+
+# talib 불러오기
+import talib
+import numpy as np
+
+apikey = "3fcdf0c7-078b-43b0-a09b-ffc6143573e9"
+secret = "9akSvT8klk3SxE0YneRHS+WVk3Lv462SNt/jM9bRa8S5fMiXxIwzYPk5teMrGxz6Xxuq+MBcuIIhUK0GOz6mVg=="
+
+client = discord.Client()
+
+# 생성된 토큰을 입력해준다.
+token = "ODA5Mzc2MzM5Njg1NjcwOTEz.YCUMdA.LYVXdfZgIba7nLow-7jbb-WVnGo"
+
+is_buy = False
+
+# 봇이 구동되었을 때 보여지는 코드
+@client.event
+async def on_ready():
+    print("다음으로 로그인합니다")
+    print(client.user.name)
+    print(client.user.id)
+    print("================")
+    await client.change_presence(activity=discord.Game("비트코인 자동거래"))
+
+rsi_status = ''
+
+def buy(amount, price):
+    trade_time = time.ctime()
+    print('--------------------')
+    print('봇 이름 : TradeBot \n코인명 : BTC \n변경된 포지션 : 매수 \n거래 성공여부 : 성공\n-')
+    print('발생 시각 : {} \n거래소 : Gopax \n거래 금액 : {}'.format(trade_time, close_price_list[-1]))
+    print('--------------------\n\n')
+
+    # 봇이 특정 메세지를 받고 인식하는 코드
+    @client.event
+    async def on_message(message):
+        if message.content == "!현재상황":
+            embed = discord.Embed(colour=discord.Colour.red())
+            embed.add_field(name="봇 이름", value="TradeBot", inline=True)
+            embed.add_field(name="코인명", value="BTC", inline=True)
+            embed.add_field(name="거래소", value="Gopax", inline=True)
+            embed.add_field(name="거래 성공여부", value="성공", inline=True)
+            embed.add_field(name="변경된 포지션", value="매수", inline=True)
+            embed.add_field(name="발생 시각", value='{}'.format(trade_time), inline=False)
+            embed.add_field(name="거래 금액", value='{}'.format(close_price_list[-1]), inline=False)
+            await message.channel.send(embed=embed)
+
+    client.run(token)
+
+def sell(amount, price):
+    trade_time = time.ctime()
+    print('--------------------')
+    print('봇 이름 : TradeBot \n코인명 : BTC \n변경된 포지션 : 매도 \n거래 성공여부 : 성공\n-')
+    print('발생 시각 : {} \n거래소 : Gopax \n거래 금액 : {}'.format(trade_time, close_price_list[-1]))
+    print('--------------------\n\n')
+
+    # 봇이 특정 메세지를 받고 인식하는 코드
+    @client.event
+    async def on_message(message):
+        if message.content == "!현재상황":
+            embed = discord.Embed(colour=discord.Colour.blue())
+            embed.add_field(name="봇 이름", value="TradeBot", inline=True)
+            embed.add_field(name="코인명", value="BTC", inline=True)
+            embed.add_field(name="거래소", value="Gopax", inline=True)
+            embed.add_field(name="거래 성공여부", value="성공", inline=True)
+            embed.add_field(name="변경된 포지션", value="매도", inline=True)
+            embed.add_field(name="발생 시각", value='{}'.format(trade_time), inline=False)
+            embed.add_field(name="거래 금액", value='{}'.format(close_price_list[-1]), inline=False)
+            await message.channel.send(embed=embed)
+
+    client.run(token)
+
+now_time = round(time.time() * 1000)
+start = int(now_time)-60*60*1000*1000
+end = int(now_time)
+
+r = requests.get('https://api.gopax.co.kr/trading-pairs/BTC-KRW/candles?start='+str(start)+'&end='+str(end)+'&interval=30')
+
+arr = r.json()
+close_price_list = []
+
+for ar in arr:
+    close_price_list.append(float(ar[4]))
+    close_price_list_nparr = np.array(close_price_list, dtype='f8')
+    output = talib.SMA(close_price_list_nparr)
+
+    # rsi 계산
+    rsi = talib.RSI(close_price_list_nparr,timeperiod = 14)
+
+    if rsi[-1] < 30:
+        rsi_status = 'low'
+    elif 30 <= rsi[-1] < 70:
+        if rsi_status == 'low' and is_buy == False:
+            print('rsi 상향 돌파')
+        if rsi_status == 'high' and is_buy == True:
+            sell(0.001, close_price_list[-1])
+            is_buy = False
+        rsi_status = 'middle'
+    else:
+        rsi_status = 'high'
+
+    avg_min_15 = sum(close_price_list[-15:]) / 15
+    avg_min_50 = sum(close_price_list[-50:]) / 50
+
+    if avg_min_15 > avg_min_50 * 1.004 and is_buy == False:
+        is_buy = True
+        buy(0.001, close_price_list[-1])
+
+    time.sleep(5)
+
+    
