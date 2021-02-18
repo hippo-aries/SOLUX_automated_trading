@@ -18,6 +18,9 @@ slack.chat.post_message('#coin', '안녕하세요! 비트코인 자동거래를 
 # c
 rsi_status = ''
 
+trade_time = time.ctime()
+'{}'.format(trade_time)
+
 def buy_test(amount,price):
     nonce = str(time.time())
     method = 'POST'
@@ -43,7 +46,7 @@ def buy_test(amount,price):
 
     req = requests.post(url='https://api.gopax.co.kr' + request_path, headers=custom_headers, json=request_body)
     is_buy = True
-    message = '코인명 : BTC \n 변경된 포지션 : 매수 \n 거래 성공여부 : 성공 \n-\n 발생 시각 : {} \n 거래소 : Gopax \n 거래금액 : {} \n 수량 : {}'.format(time.ctime, close_price_list[-1], 0.001)
+    message = '코인명 : BTC \n 변경된 포지션 : 매수 \n 거래 성공여부 : 성공 \n-\n 발생 시각 : {} \n 거래소 : Gopax \n 거래금액 : {} \n 수량 : {}'.format(trade_time, close_price_list[-1], 0.001)
     slack.chat.post_message('#coin', '코인 자동거래 알림입니다.\n\n' + message)
     print('매수')
 
@@ -72,7 +75,7 @@ def sell_test(amount,price):
 
     req = requests.post(url='https://api.gopax.co.kr' + request_path, headers=custom_headers, json=request_body)
     is_buy = False
-    message = '코인명 : BTC \n 변경된 포지션 : 매도 \n 거래 성공여부 : 성공 \n-\n 발생 시각 : {} \n 거래소 : Gopax \n 거래금액 : {} \n 수량 : {}'.format(time.ctime, close_price_list[-1], 0.001)
+    message = '코인명 : BTC \n 변경된 포지션 : 매도 \n 거래 성공여부 : 성공 \n-\n 발생 시각 : {} \n 거래소 : Gopax \n 거래금액 : {} \n 수량 : {}'.format(trade_time, close_price_list[-1], 0.001)
     slack.chat.post_message('#coin', '코인 자동거래 알림입니다.\n\n' + message)
     print('매도')
 
