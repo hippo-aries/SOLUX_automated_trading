@@ -5,13 +5,13 @@ import asyncio, discord
 import talib
 import numpy as np
 
-apikey = "3fcdf0c7-078b-43b0-a09b-ffc6143573e9"
-secret = "9akSvT8klk3SxE0YneRHS+WVk3Lv462SNt/jM9bRa8S5fMiXxIwzYPk5teMrGxz6Xxuq+MBcuIIhUK0GOz6mVg=="
+apikey = ""
+secret = ""
 
 client = discord.Client()
 
 # 생성된 토큰을 입력해준다.
-token = "ODA5Mzc2MzM5Njg1NjcwOTEz.YCUMdA.LYVXdfZgIba7nLow-7jbb-WVnGo"
+token = ""
 
 is_buy = False
 
