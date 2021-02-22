@@ -5,10 +5,10 @@ from slacker import Slacker
 import talib
 import numpy as np
 
-apikey = '2eaa6531162877841da4c3c62517b87c'
-secret = '7b76114def75db596baf46e90e7957e3'
+apikey = ''
+secret = ''
 
-slack = Slacker('xoxb-1701877278516-1680953559239-DJJ61SUMk10rjGBEjWkqzn3t')
+slack = Slacker('')
 
 is_buy = False
 
