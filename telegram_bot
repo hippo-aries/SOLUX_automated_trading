@@ -5,12 +5,12 @@ import telegram
 import talib
 import numpy as np
 
-apikey = "3fcdf0c7-078b-43b0-a09b-ffc6143573e9"
-secret = "9akSvT8klk3SxE0YneRHS+WVk3Lv462SNt/jM9bRa8S5fMiXxIwzYPk5teMrGxz6Xxuq+MBcuIIhUK0GOz6mVg=="
+apikey = ""
+secret = ""
 
 # 생성된 토큰을 입력해준다.
-my_token = "1518306402:AAGhtY7wjAWspeG0B2y0NtiD_-Bu6IJ3_ls"
-chat_id = "1491342549"
+my_token = ""
+chat_id = ""
 
 bot = telegram.Bot(token = my_token)
 is_buy = False
